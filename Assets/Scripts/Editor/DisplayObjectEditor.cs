@@ -10,8 +10,22 @@ namespace FairyGUIEditor
     [CustomEditor(typeof(DisplayObjectInfo))]
     public class DisplayObjectEditor : Editor
     {
+        bool _guiControllersFoldout = true;
+        bool _guiTransitionsFoldout = true;
+
         void OnEnable()
         {
+            EditorApplication.update += _onEditorAppUpdate;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.update -= _onEditorAppUpdate;
+        }
+
+        void _onEditorAppUpdate()
+        {
+            Repaint();
         }
 
         public override void OnInspectorGUI()
@@ -78,6 +92,11 @@ namespace FairyGUIEditor
                 }
 
                 EditorGUI.BeginChangeCheck();
+                float alpha = EditorGUILayout.Slider("Alpha", gObj.alpha, 0, 1);
+                if (EditorGUI.EndChangeCheck())
+                    gObj.alpha = alpha;
+
+                EditorGUI.BeginChangeCheck();
                 Vector3 position = EditorGUILayout.Vector3Field("Position", gObj.position);
                 if (EditorGUI.EndChangeCheck())
                     gObj.position = position;
@@ -121,16 +140,119 @@ namespace FairyGUIEditor
                 if (EditorGUI.EndChangeCheck())
                     gObj.icon = icon;
 
-                if (gObj.displayObject != null)
+                //Draw Color Field
+                var objType = gObj.GetType();
+                var colorProperty = objType.GetProperty("color");
+                if (colorProperty != null)
                 {
-                    EditorGUI.BeginDisabledGroup(true);
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.PrefixLabel("Rendering Order");
-                    EditorGUILayout.IntField(gObj.displayObject.renderingOrder);
-                    EditorGUILayout.EndHorizontal();
-                    EditorGUI.EndDisabledGroup();
+                    Color color = (Color)colorProperty.GetValue(gObj);
+                    color = EditorGUILayout.ColorField("Color", color);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        colorProperty.SetValue(gObj, color);
+                    }
                 }
+
+                EditorGUI.BeginChangeCheck();
+                string tooltips = EditorGUILayout.TextField("Tooltips", gObj.tooltips);
+                if (EditorGUI.EndChangeCheck())
+                    gObj.tooltips = tooltips;
+
+                if (gObj is not (GImage))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool touchable = EditorGUILayout.Toggle("Touchable", gObj.touchable);
+                    if (EditorGUI.EndChangeCheck())
+                        gObj.touchable = touchable;
+
+                    EditorGUI.BeginChangeCheck();
+                    bool draggable = EditorGUILayout.Toggle("Draggable", gObj.draggable);
+                    if (EditorGUI.EndChangeCheck())
+                        gObj.draggable = draggable;
+                }
+
+                if (gObj is GComponent gComp)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool opaque = EditorGUILayout.Toggle("Opaque", gComp.opaque);
+                    if (EditorGUI.EndChangeCheck())
+                        gComp.opaque = opaque;
+
+                    var headerLabelStyle = new GUIStyle(GUI.skin.label);
+                    headerLabelStyle.fontStyle = FontStyle.Bold;
+
+                    if (gComp.Controllers.Count > 0)
+                    {
+                        _guiControllersFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_guiControllersFoldout, "Controllers");
+                        if (_guiControllersFoldout)
+                        {
+                            foreach (var ctl in gComp.Controllers)
+                            {
+                                EditorGUILayout.BeginHorizontal();
+                                EditorGUILayout.LabelField(ctl.name, headerLabelStyle, GUILayout.MaxWidth(ctl.name.Length * 15));
+
+                                for (var i = 0; i < ctl.pageCount; i++)
+                                {
+                                    var btnName = ctl.GetPageId(i) + ": " + ctl.GetPageName(i);
+                                    var btnStyle = new GUIStyle("ButtonMid");
+                                    if (ctl.selectedIndex == i)
+                                    {
+                                        btnStyle.normal.textColor = Color.green;
+                                        btnStyle.hover.textColor = Color.yellow;
+                                        btnStyle.fontStyle = FontStyle.Bold;
+                                    }
+                                    if (GUILayout.Button(btnName, btnStyle))
+                                    {
+                                        ctl.selectedIndex = i;
+                                    }
+                                }
+                                EditorGUILayout.EndHorizontal();
+                            }
+                        }
+                        EditorGUILayout.EndFoldoutHeaderGroup();
+                    }
+
+                    if (gComp.Transitions.Count > 0)
+                    {
+                        _guiTransitionsFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_guiTransitionsFoldout, "Transitions");
+                        if (_guiTransitionsFoldout)
+                        {
+                            foreach (var transition in gComp.Transitions)
+                            {
+                                EditorGUILayout.BeginHorizontal();
+                                var labelStyle = new GUIStyle(headerLabelStyle);
+                                if (transition.playing)
+                                {
+                                    labelStyle.normal.textColor = Color.yellow;
+                                }
+
+                                EditorGUILayout.LabelField($"{transition.name} - {transition.totalDuration}s", labelStyle, GUILayout.MinWidth(150));
+                                EditorGUI.BeginChangeCheck();
+                                var timeScale = transition.timeScale;
+
+
+                                if (EditorGUI.EndChangeCheck())
+                                    transition.timeScale = timeScale;
+
+
+                                if (GUILayout.Button("▶", GUILayout.Width(20)))
+                                {
+                                    transition.Play();
+                                }
+
+                                if (GUILayout.Button("■", GUILayout.Width(20)))
+                                {
+                                    transition.Stop();
+                                }
+
+                                EditorGUILayout.EndHorizontal();
+                            }
+                        }
+                        EditorGUILayout.EndFoldoutHeaderGroup();
+                    }
+                }
+
             }
         }
     }
