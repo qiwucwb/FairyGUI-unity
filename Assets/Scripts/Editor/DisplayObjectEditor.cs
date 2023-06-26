@@ -12,6 +12,7 @@ namespace FairyGUIEditor
     {
         bool _guiControllersFoldout = true;
         bool _guiTransitionsFoldout = true;
+        bool _guiTextFormatFoldout = true;
 
         void OnEnable()
         {
@@ -170,6 +171,72 @@ namespace FairyGUIEditor
                     bool draggable = EditorGUILayout.Toggle("Draggable", gObj.draggable);
                     if (EditorGUI.EndChangeCheck())
                         gObj.draggable = draggable;
+                }
+
+                TextFormat textFormat = null;
+                if (gObj is GTextField gTxt)
+                {
+                    textFormat = gTxt.textFormat;
+                }
+
+                if (textFormat != null)
+                {
+                    _guiTextFormatFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_guiTextFormatFoldout, "Text Format");
+                    EditorGUI.BeginChangeCheck();
+                    if (_guiTextFormatFoldout)
+                    {
+                       
+                        var initLabelWidth = EditorGUIUtility.labelWidth;
+
+                        var richStyle = new GUIStyle(GUI.skin.label);
+                        richStyle.richText = true;
+                        EditorGUIUtility.labelWidth = 60;
+                        textFormat.font = EditorGUILayout.TextField("Font", textFormat.font);
+                        textFormat.align = (AlignType)EditorGUILayout.EnumPopup("Align",textFormat.align);
+                        
+                        EditorGUIUtility.labelWidth = initLabelWidth;
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUIUtility.labelWidth = 40;
+                        textFormat.size = EditorGUILayout.IntField("Size", textFormat.size);
+                        textFormat.color = EditorGUILayout.ColorField("Color", textFormat.color);
+                        EditorGUIUtility.labelWidth = initLabelWidth;
+                        EditorGUILayout.EndHorizontal();
+
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUIUtility.labelWidth = 40;
+                        textFormat.outline = EditorGUILayout.FloatField("Outline", textFormat.outline);
+                        textFormat.outlineColor = EditorGUILayout.ColorField("Color", textFormat.outlineColor);
+                        EditorGUIUtility.labelWidth = initLabelWidth;
+                        EditorGUILayout.EndHorizontal();
+
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUIUtility.labelWidth = 50;
+                        textFormat.shadowOffset = EditorGUILayout.Vector2Field("Shadow Offset", textFormat.shadowOffset);
+                        textFormat.shadowColor = EditorGUILayout.ColorField("Color", textFormat.shadowColor);
+                        EditorGUIUtility.labelWidth = initLabelWidth;
+                        EditorGUILayout.EndHorizontal();
+                       
+
+                        EditorGUILayout.BeginHorizontal();
+                        textFormat.italic = EditorGUILayout.ToggleLeft("<i>I</i>", textFormat.italic, richStyle,GUILayout.Width(30));
+                        textFormat.bold = EditorGUILayout.ToggleLeft("<b>B</b>", textFormat.bold, richStyle, GUILayout.Width(30));
+                        textFormat.underline = EditorGUILayout.ToggleLeft("U̲", textFormat.underline, richStyle, GUILayout.Width(30));
+                        textFormat.strikethrough = EditorGUILayout.ToggleLeft(" S̶ ̶ ̶", textFormat.strikethrough, richStyle, GUILayout.Width(36));
+                        EditorGUILayout.EndHorizontal();
+
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUIUtility.labelWidth = 90;
+                        textFormat.lineSpacing = EditorGUILayout.IntField("Line Spacing", textFormat.lineSpacing);
+                        textFormat.letterSpacing = EditorGUILayout.IntField("Letter Spacing", textFormat.letterSpacing);
+                        EditorGUIUtility.labelWidth = initLabelWidth;
+                        EditorGUILayout.EndHorizontal();
+                        textFormat.specialStyle = (TextFormat.SpecialStyle)EditorGUILayout.EnumPopup("Special Style", textFormat.specialStyle);
+
+                    }
+                    if (EditorGUI.EndChangeCheck())
+                        gObj.asTextField.textFormat = textFormat;
+
+                    EditorGUILayout.EndFoldoutHeaderGroup();
                 }
 
                 if (gObj is GComponent gComp)
